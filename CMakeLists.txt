@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.8)
 project(pose_estimation)
 
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -17,10 +22,8 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/peInterface/interface)
 
 # Gather .cpp files
-file(GLOB ROOT_SOURCES "${CMAKE_SOURCE_DIR}/*.cpp")
 file(GLOB PE_INTERFACE_SOURCES "${CMAKE_SOURCE_DIR}/peInterface/*.cpp")
-
-add_executable(pose_estimation_node src/pose_estimation_node.cpp ${ROOT_SOURCES} ${PE_INTERFACE_SOURCES})
+add_executable(pose_estimation_node src/pose_estimation_node.cpp ${PE_INTERFACE_SOURCES})
 ament_target_dependencies(pose_estimation_node rclcpp std_msgs)
 
 install(TARGETS pose_estimation_node DESTINATION lib/${PROJECT_NAME})
