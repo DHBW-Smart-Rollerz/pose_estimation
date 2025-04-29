@@ -1,50 +1,91 @@
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float32.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "peInterface/PoseEstimator.h"
 
 // https://docs.ros.org/en/jazzy/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Cpp-Publisher-And-Subscriber.html
 // Within the node, handlers for dynamic bicycle model and EKF could be used
 // MATLAB Models for EKF, DMB -> Generated C++ Classes -> Ros2 Node
 
-class MiddleMan : public rclcpp::Node
+class PoseEstimationNode : public rclcpp::Node
 {
 public:
-    MiddleMan() : Node("middle_man"), count_(0)
+    PoseEstimationNode() : Node("pose_estimation_node")
     {
-        // Publisher for "secondTopic"
-        publisher_ = this->create_publisher<std_msgs::msg::String>("secondTopic", 10);
+        this->declare_parameter("sub_imu_topic", "/sensor/imu");
+        this->declare_parameter("sub_velocity_topic", "/sensor/velocity");
+        this->declare_parameter("pub_pose_topic", "/pose_estimation/pose");
+        this->declare_parameter("pub_ekf_state_topic", "/pose_estimation/velocity");
+        this->declare_parameter("estimation_interval_milliseconds", 5);
 
-        // Sender callback to publish the message
-        sender_callback_ = [this](const std::string &data) {
-            auto message = std_msgs::msg::String();
-            message.data = "Forwarded: " + data + " (count: " + std::to_string(this->count_++) + ")";
-            RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-            this->publisher_->publish(message);
+        std::string sub_imu_topic = this->get_parameter("sub_imu_topic").as_string();
+        std::string sub_velocity_topic = this->get_parameter("sub_velocity_topic").as_string();
+        std::string pub_pose_topic = this->get_parameter("pub_pose_topic").as_string();
+        std::string pub_ekf_state_topic = this->get_parameter("pub_ekf_state_topic").as_string();
+        int estimation_interval_milliseconds = this->get_parameter("estimation_interval_milliseconds").as_int();
+
+        pose_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>(pub_pose_topic, 1);
+        state_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>(pub_ekf_state_topic, 1);
+
+
+
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(estimation_interval_milliseconds), 
+            std::bind(&PoseEstimationNode::timer_callback, this)
+            );
+
+        auto imu_callback_ = [this](sensor_msgs::msg::Imu::UniquePtr msg) {
+            this->imu_gyro = msg->angular_velocity.z;
+            this->imu_acc = msg->linear_acceleration.x;
+            RCLCPP_INFO(this->get_logger(), "I heard: gyro: '%lf', acceleration: '%lf",
+                        this->imu_gyro, this->imu_acc);
+
         };
 
-        // Callback for when a message is received on "firstTopic"
-        auto topic_callback = [this](std_msgs::msg::String::UniquePtr msg) {
-            RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
-            sender_callback_(msg->data); // Use the member variable callback
+        auto velocity_callback = [this](std_msgs::msg::Float32::UniquePtr msg) {
+            this->sensor_velocity = msg->data;
+            RCLCPP_INFO(this->get_logger(), "I heard: velocity: '%f'", this->sensor_velocity);
+
         };
 
-        // Subscription to "firstTopic"
-        subscription_ = this->create_subscription<std_msgs::msg::String>(
-            "firstTopic", 10, topic_callback);
+
+        imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
+            sub_imu_topic, 1, imu_callback_);
+
+        velocity_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+            sub_velocity_topic, 1, velocity_callback);
     }
 
 private:
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-    std::function<void(const std::string &)> sender_callback_; // Use std::function for callback
-    size_t count_;
+
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr velocity_subscription_;
+
+    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr state_publisher_;
+
+
+    void timer_callback()
+    {
+
+
+        RCLCPP_INFO(this->get_logger(), "Timer called!");
+    }
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    float sensor_velocity = 0.0;
+    double imu_acc = 0.0;
+    double imu_gyro = 0.0;
 };
 
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MiddleMan>());
+    rclcpp::spin(std::make_shared<PoseEstimationNode>());
     rclcpp::shutdown();
     return 0;
 }

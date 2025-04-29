@@ -14,6 +14,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -24,7 +26,7 @@ include_directories(${CMAKE_SOURCE_DIR}/peInterface/interface)
 # Gather .cpp files
 file(GLOB PE_INTERFACE_SOURCES "${CMAKE_SOURCE_DIR}/peInterface/*.cpp")
 add_executable(pose_estimation_node src/pose_estimation_node.cpp ${PE_INTERFACE_SOURCES})
-ament_target_dependencies(pose_estimation_node rclcpp std_msgs)
+ament_target_dependencies(pose_estimation_node rclcpp std_msgs geometry_msgs sensor_msgs)
 
 install(TARGETS pose_estimation_node DESTINATION lib/${PROJECT_NAME})
 
