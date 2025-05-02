@@ -30,6 +30,17 @@ ament_target_dependencies(pose_estimation_node rclcpp std_msgs geometry_msgs sen
 
 install(TARGETS pose_estimation_node DESTINATION lib/${PROJECT_NAME})
 
+# Install the launch file
+install(FILES
+  launch/pose_estimation.launch.py
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+# Install the config folder
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
 

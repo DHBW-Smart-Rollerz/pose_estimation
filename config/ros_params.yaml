@@ -1,0 +1,8 @@
+pose_estimation_node:
+  ros__parameters:
+    sub_imu_topic: "/sensor/imu"
+    sub_velocity_topic: "/sensor/velocity"
+    sub_steering_angle_topic: "/control/steering_angle/target"
+    pub_pose_topic: "/pose_estimation/pose"
+    pub_ekf_state_topic: "/pose_estimation/velocity"
+    estimation_interval_milliseconds: 5
