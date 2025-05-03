@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "peInterface/PoseEstimator.h"
+#include <cmath>
 
 // https://docs.ros.org/en/jazzy/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Cpp-Publisher-And-Subscriber.html
 // Within the node, handlers for dynamic bicycle model and EKF could be used
@@ -49,7 +50,7 @@ public:
         };
 
         auto steering_angle_callback = [this](std_msgs::msg::Int16::UniquePtr msg) {
-            this->steering_angle = (double) msg->data; // TODO: Umrechnen
+            this->steering_angle = ((double) msg->data) * (M_PI / 180.0); // convert to radians
             RCLCPP_INFO(this->get_logger(), "I heard: steering angle: '%lf'", this->steering_angle);
 
         };
@@ -116,8 +117,8 @@ private:
         geometry_msgs::msg::Pose pose_msg;
         geometry_msgs::msg::Twist velocity_msg;
 
-        pose_msg.position.x = pose_result[0];
-        pose_msg.position.y = pose_result[1];
+        pose_msg.position.x = pose_result[0] * 1000;
+        pose_msg.position.y = pose_result[1] * 1000;
         pose_msg.position.z = 0.0;
         pose_msg.orientation.w = 0.0;
         pose_msg.orientation.x = 0.0;
