@@ -110,8 +110,8 @@ private:
 
         poseEstimator.predict(u);
         poseEstimator.correct(z);
-        poseEstimator.getState(pose_result);
-        poseEstimator.getPose(state_result);
+        poseEstimator.getState(state_result);
+        poseEstimator.getPose(pose_result);
 
         geometry_msgs::msg::Pose pose_msg;
         geometry_msgs::msg::Twist velocity_msg;
